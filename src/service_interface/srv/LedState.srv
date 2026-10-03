@@ -1,0 +1,5 @@
+int8 led_gpio
+int64 state
+---
+bool success
+string message
