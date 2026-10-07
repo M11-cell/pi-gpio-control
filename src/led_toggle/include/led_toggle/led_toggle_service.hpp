@@ -5,6 +5,7 @@
 
 #include "rclcpp/rclcpp.hpp"
 #include "service_interface/srv/led_state.hpp"
+#include "service_interface/msg/led_status.hpp"
 #include <wiringPi.h>
 
 
@@ -20,12 +21,13 @@ class LedServer: public rclcpp::Node{
         void callbackSetLEDState(const service_interface::srv::LedState::Request::SharedPtr request,
                                     const service_interface::srv::LedState::Response::SharedPtr response); 
 
-        void updateLEDState(); 
+        void updateLEDStatus(); 
 
     private:
 
-        rclcpp::Service<service_interface::srv::LedState()>::SharedPtr server_;
         rclcpp::TimerBase::SharedPtr timer_; 
+        rclcpp::Service<service_interface::srv::LedState>::SharedPtr server_;
+        rclcpp::Publisher<service_interface::msg::LedStatus>::SharedPtr led_status_publisher_; 
 
 };
 

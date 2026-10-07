@@ -1,11 +1,11 @@
-#include "led_toggle_client.hpp"
+#include "led_toggle/led_toggle_client.hpp"
 #include <chrono>
 #include <thread>
 
 
 LedClient::LedClient::LedClient() : rclcpp::Node("led_toggle_client"), led_states(17, 0){
 
-    client_ = this->create_client<service_interface::srv::LedState>("set_led");
+    client_ = this->create_client<service_interface::srv::LedState>("request_led_activation");
     led_state_publisher = this->create_publisher<service_interface::msg::LedStatus>("/toggle_cmd", rclcpp::SystemDefaultsQoS());
     timer_ = this->create_wall_timer(std::chrono::seconds(1), std::bind(&LedClient::LedClient::getCurrentState, this)); 
 
