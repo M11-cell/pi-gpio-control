@@ -3,11 +3,20 @@
 #include <thread>
 
 
-LedClient::LedClient::LedClient() : rclcpp::Node("led_toggle_client"), led_states(17, 0){
+LedClient::LedClient::LedClient() : rclcpp::Node("led_toggle_client"){
+
+    
+    this->declare_parameter<int8_t>("gpio_nunmber", 0); 
+    this->declare_parameter<int64_t>("led_state", 0);
+
+    led_states.first = this->get_parameter("gpio_nunmber").as_int();
+    led_states.second = this->get_parameter("led_state").as_int(); 
+
 
     client_ = this->create_client<service_interface::srv::LedState>("request_led_activation");
     led_state_publisher = this->create_publisher<service_interface::msg::LedStatus>("/toggle_cmd", rclcpp::SystemDefaultsQoS());
     timer_ = this->create_wall_timer(std::chrono::seconds(1), std::bind(&LedClient::LedClient::getCurrentState, this)); 
+
 
     while(!client_->wait_for_service(std::chrono::seconds(3))){
         RCLCPP_WARN(this->get_logger(), "Waiting for Service server to be up...");
@@ -21,7 +30,7 @@ void LedClient::LedClient::getCurrentState(){
     if(led_states.second == 0){
 
         RCLCPP_INFO(this->get_logger(), "The Led on the PI is currently inactive"); 
-        setLedState(17, 1);
+        setLedState(led_states.first, led_states.second);
 
     }else{
         RCLCPP_INFO(this->get_logger(), "The Led on the PI is currently active!");
