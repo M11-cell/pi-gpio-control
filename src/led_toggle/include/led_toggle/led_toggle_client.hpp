@@ -4,6 +4,7 @@
 #define LED_TOGGLE_CLIENT_HPP
 
 #include "rclcpp/rclcpp.hpp"
+#include "example_interfaces/msg/string.hpp"
 #include <iostream>
 #include "service_interface/srv/led_state.hpp"
 #include "service_interface/msg/led_status.hpp"
@@ -26,11 +27,17 @@ class LedClient: public rclcpp::Node{
         void VerifyLedStatus(rclcpp::Client<service_interface::srv::LedState>::SharedFuture future); 
 
     private:
+
+
+        void UserInputHandler(const std::vector<rclcpp::Parameter>& parameters);
         
         std::pair<int8_t, int64_t> led_states; 
         rclcpp::Client<service_interface::srv::LedState>::SharedPtr client_;
         rclcpp::TimerBase::SharedPtr timer_; 
-        rclcpp::Publisher<service_interface::msg::LedStatus>::SharedPtr led_state_publisher;
+        rclcpp::Publisher<example_interfaces::msg::String>::SharedPtr led_state_publisher;
+
+        rclcpp::node_interfaces::PostSetParametersCallbackHandle::SharedPtr param_cb_handle; 
+
 
 };
 

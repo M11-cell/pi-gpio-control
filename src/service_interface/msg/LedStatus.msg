@@ -1,1 +1,1 @@
-int64 gpios_active
+int64[] gpios_active

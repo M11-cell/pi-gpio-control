@@ -8,6 +8,7 @@ endif()
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(example_interfaces REQUIRED)
 find_package(service_interface REQUIRED)
 
 find_library(WIRINGPI_LIB wiringPi REQUIRED)
@@ -23,6 +24,7 @@ target_link_libraries(toggle_client
   PUBLIC
     rclcpp::rclcpp 
     service_interface::service_interface
+    example_interfaces::example_interfaces
 )
 
 add_executable(toggle_service src/led_toggle_service.cpp)
