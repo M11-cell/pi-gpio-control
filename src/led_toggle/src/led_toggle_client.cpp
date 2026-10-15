@@ -1,6 +1,6 @@
 #include "led_toggle/led_toggle_client.hpp"
-#include <chrono>
-#include <thread>
+#include <algorithm>
+
 
 static constexpr auto kGpioParam = "gpio_number";
 static constexpr auto kLedStateParam = "led_state"; 
@@ -14,8 +14,8 @@ LedClient::LedClient() : rclcpp::Node("led_toggle_client"){
     led_.gpio_number = this->get_parameter(kGpioParam).as_int(); 
     led_.led_on = this->get_parameter(kLedStateParam).as_bool(); 
 
-    on_set_handle = this->add_on_set_parameters_callback(std::bind(&LedClient::ValidateUserInput, this, std::placeholders::_1));
-    post_set_handle = this->add_post_set_parameters_callback(std::bind(&LedClient::UserInputHandler, this, std::placeholders::_1));
+    on_set_handle_ = this->add_on_set_parameters_callback(std::bind(&LedClient::ValidateUserInput, this, std::placeholders::_1));
+    post_set_handle_ = this->add_post_set_parameters_callback(std::bind(&LedClient::UserInputHandler, this, std::placeholders::_1));
 
 
     client_ = this->create_client<LedStateSrv>("request_led_state_activation");
@@ -44,38 +44,36 @@ rcl_interfaces::msg::SetParametersResult LedClient::ValidateUserInput(const std:
 
 void LedClient::UserInputHandler(const std::vector<rclcpp::Parameter>& parameters){
 
+    //**Note: Since the kLedStateParam is a GLOBAL constant, the lambda does NOT require a capture clause! 
+    const bool state_touched = std::any_of(
+        parameters.begin(), parameters.end(),
+        [](const rclcpp::Parameter& p){return p.get_name() == kLedStateParam; });
 
-    for(const auto &params: parameters){
-
-        if(params.get_name() == kGpioParam){
-           led_.gpio_number = params.as_int(); 
-           RCLCPP_INFO(this->get_logger(), "Set %s to %ld", params.get_name().c_str(), params.as_int());       
-        }else if(params.get_name() == kLedStateParam){
-            led_.led_on = params.as_bool(); 
-            if(led_.led_on){
-                RCLCPP_INFO(this->get_logger(), "The state of the LED is currently set to HIGH");
-            }else{
-                RCLCPP_INFO(this->get_logger(), "The state of the LED is currently set to HIGH"); 
-            }
-
-        }else{
-            RCLCPP_WARN(this->get_logger(), "The parameter that was entered is either not valid, or unknown!");
-        }
-
+    if(!state_touched){
+        RCLCPP_WARN(this->get_logger(), "Warning! You must choose to set a state (High/Low) of the gpio you have configured the LED to.");
+        return; 
     }
 
-    LedClient::sendLedRequest(led_); 
+    LedConfig params{
+
+        static_cast<int>(get_parameter(kGpioParam).as_int()),
+        get_parameter(kLedStateParam).as_bool()};
+
+    RCLCPP_INFO(this->get_logger(), "Requesting pin %d to be set to %s", params.gpio_number, (params.led_on ? "HIGH" : "LOW")); 
+    SendLedRequest(params);
+
+
 }
 
 
-void LedClient::sendLedRequest(const LedConfig&  params){
+void LedClient::SendLedRequest(const LedConfig&  params){
 
     if(!client_->service_is_ready()){
         RCLCPP_WARN(this->get_logger(), "The service is not yet available; request dropped");
         return; 
     }
 
-    auto request = std::make_shared<service_interface::srv::LedState::Request>();
+    auto request = std::make_shared<LedStateSrv::Request>();
 
     request->led_gpio = params.gpio_number; 
     request->state = params.led_on;
@@ -84,33 +82,27 @@ void LedClient::sendLedRequest(const LedConfig&  params){
         [this, params](rclcpp::Client<LedStateSrv>::SharedFuture future){
             const auto response = future.get(); 
             if(!response->success){
-                RCLCPP_WARN(this->get_logger(), "The request was uncuccessful for the following reason: %s", response->message.c_str());
+                RCLCPP_WARN(this->get_logger(), "The request was unsuccessful for the following reason: %s", response->message.c_str());
                 return; 
             }
             
             led_ = {params.gpio_number, params.led_on}; 
-            publishLedStates(); 
+            PublishLedStates(); 
         }
     );
 
 }
 
-void LedClient::publishLedStates(){
+void LedClient::PublishLedStates(){
 
-    auto msg = service_interface::msg::LedStatus();   
+    auto msg = LedStatusMsg();   
     msg.gpio_selected = led_.gpio_number; 
     msg.state = led_.led_on; 
 
-    std::string led_state = ""; 
-
-    if(msg.state){
-        led_state = "HIGH";
-    }else{
-        led_state = "LOW";
-    }
+    const char* state = msg.state ? "HIGH" : "LOW"; 
     
     led_status_pub_->publish(msg); 
-    RCLCPP_INFO(this->get_logger(), "Currently, the LED is connected to GPIO %d, and is set to %s", static_cast<int>(msg.gpio_selected), led_state.c_str());
+    RCLCPP_INFO(this->get_logger(), "Currently, the LED is connected to GPIO %d, and is set to %s", static_cast<int>(msg.gpio_selected), state);
 
 
 }

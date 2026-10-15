@@ -2,7 +2,6 @@
 #define LED_TOGGLE_CLIENT_HPP
 
 #include "rclcpp/rclcpp.hpp"
-#include "example_interfaces/msg/string.hpp"
 
 #include <vector>
 #include <memory>
@@ -17,7 +16,7 @@ class LedClient: public rclcpp::Node{
 
     public: 
 
-        explicit LedClient();
+        LedClient();
      
         
         private:
@@ -38,19 +37,18 @@ class LedClient: public rclcpp::Node{
             void UserInputHandler(const std::vector<rclcpp::Parameter>& parameters);
 
             //Makes call request to service to set a particular gpio pin to the requested state
-            void sendLedRequest(const LedConfig&  params);
+            void SendLedRequest(const LedConfig&  params);
         
             //Publishes Led Status
-            void publishLedStates();
+            void PublishLedStates();
 
         
         
             rclcpp::Client<LedStateSrv>::SharedPtr client_;
             rclcpp::Publisher<LedStatusMsg>::SharedPtr led_status_pub_;
-            rclcpp::TimerBase::SharedPtr timer_; 
 
-            rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr on_set_handle; 
-            rclcpp::node_interfaces::PostSetParametersCallbackHandle::SharedPtr post_set_handle; 
+            rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr on_set_handle_; 
+            rclcpp::node_interfaces::PostSetParametersCallbackHandle::SharedPtr post_set_handle_; 
 
 
 };
