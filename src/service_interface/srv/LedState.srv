@@ -1,5 +1,6 @@
-int8 led_gpio
-int64 state
+uint8 led_gpio
+uint8 state
 ---
 bool success
+uint8 state
 string message

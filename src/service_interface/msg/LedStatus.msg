@@ -1,1 +1,2 @@
-int64[] gpios_active
+int8 gpio_selected
+bool state
