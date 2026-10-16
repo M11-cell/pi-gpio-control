@@ -40,12 +40,12 @@ class LedClient: public rclcpp::Node{
             void SendLedRequest(const LedConfig&  params);
         
             //Publishes Led Status
-            void PublishLedStates();
+            void HandlePublishedLedStates(const LedStatusMsg::SharedPtr msg);
 
         
         
             rclcpp::Client<LedStateSrv>::SharedPtr client_;
-            rclcpp::Publisher<LedStatusMsg>::SharedPtr led_status_pub_;
+            rclcpp::Subscription<LedStatusMsg>::SharedPtr led_status_pub_;
 
             rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr on_set_handle_; 
             rclcpp::node_interfaces::PostSetParametersCallbackHandle::SharedPtr post_set_handle_; 

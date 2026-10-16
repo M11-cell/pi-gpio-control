@@ -18,8 +18,8 @@ LedClient::LedClient() : rclcpp::Node("led_toggle_client"){
     post_set_handle_ = this->add_post_set_parameters_callback(std::bind(&LedClient::UserInputHandler, this, std::placeholders::_1));
 
 
-    client_ = this->create_client<LedStateSrv>("request_led_state_activation");
-    led_status_pub_ = this->create_publisher<LedStatusMsg>("/led_status", 100);
+    client_ = this->create_client<LedStateSrv>("set_led");
+    led_status_pub_ = this->create_subscription<LedStatusMsg>("/led_status", 100, [this](const LedStatusMsg::SharedPtr msg){return msg;});
 
     
     RCLCPP_INFO(this->get_logger(), "Led State Client node has been started");
@@ -86,24 +86,16 @@ void LedClient::SendLedRequest(const LedConfig&  params){
                 return; 
             }
             
-            led_ = {params.gpio_number, params.led_on}; 
-            PublishLedStates(); 
+            led_ = {params.gpio_number, params.led_on}; // update led member stats. 
         }
     );
 
 }
 
-void LedClient::PublishLedStates(){
+void LedClient::HandlePublishedLedStates(const LedStatusMsg::SharedPtr msg){
 
-    auto msg = LedStatusMsg();   
-    msg.gpio_selected = led_.gpio_number; 
-    msg.state = led_.led_on; 
-
-    const char* state = msg.state ? "HIGH" : "LOW"; 
-    
-    led_status_pub_->publish(msg); 
-    RCLCPP_INFO(this->get_logger(), "Currently, the LED is connected to GPIO %d, and is set to %s", static_cast<int>(msg.gpio_selected), state);
-
+    const char* state = msg->state ? "HIGH" : "LOW";
+    RCLCPP_INFO(this->get_logger(), "The current LED is connected to GPIO %d, and is set to %s", static_cast<int>(msg->gpio_selected), state);
 
 }
 
